@@ -23,9 +23,11 @@ export default function ConsultaCard({
     });
   }
 
-  // Auxiliar LOCAL - formata data para 25/03/2026
-  function formatarData(data: Date): string {
-    return data.toLocaleDateString("pt-BR");
+  function formatarData(dataHora: string): string {
+    const data = new Date(dataHora);
+    const dia = data.toLocaleDateString("pt-BR");
+    const hora = data.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    return `${dia} às ${hora}`;
   }
 
   return (
@@ -106,7 +108,7 @@ export default function ConsultaCard({
       */}
       <View style={styles.secao}>
         <Text style={styles.label}>📅 Dados da Consulta</Text>
-        <Text style={styles.valor}>Data: {formatarData(consulta.data)}</Text>
+        <Text style={styles.valor}>Data: {formatarData(consulta.dataHora)}</Text>
         <Text style={styles.valor}>
           Valor: {formatarValor(consulta.valor)}
         </Text>

@@ -6,4 +6,5 @@ export interface Medico {
     crm: string;
     especialidade: Especialidade;
     ativo: boolean;
+    valorConsulta: number | null;
 }

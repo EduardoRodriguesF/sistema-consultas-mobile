@@ -1,21 +1,57 @@
 import React from "react";
 import { View, Text, StyleSheet, Button } from "react-native";
-import { Consulta } from "../interfaces/consulta"; // ← import do type GLOBAL
 
-// Type LOCAL (usado apenas aqui)
+// Importamos a interface Consulta que criamos na aula passada
+// Ela vem de src/interfaces/ porque é usada em VÁRIOS lugares
+import { Consulta } from "../interfaces/consulta";
+
 type ConsultaCardProps = {
+  // A consulta que queremos exibir (OBRIGATÓRIA)
   consulta: Consulta;
+
+  // Função chamada quando o usuário clica em "Confirmar" (OPCIONAL)
+  // Por que opcional? Às vezes queremos só exibir, sem botões de ação!
   onConfirmar?: () => void;
+
+  // Função chamada quando o usuário clica em "Cancelar" (OPCIONAL)
   onCancelar?: () => void;
 };
 
+/**
+ * =============================================================================
+ * COMPONENTE PRINCIPAL
+ * =============================================================================
+ *
+ * Aqui usamos destructuring nas props - é uma técnica moderna do JavaScript
+ *
+ * Em vez de: function ConsultaCard(props) { const consulta = props.consulta; }
+ * Fazemos: function ConsultaCard({ consulta, onConfirmar, onCancelar })
+ *
+ * Fica mais limpo e direto!
+ *
+ * =============================================================================
+ */
 export default function ConsultaCard({
   consulta,
   onConfirmar,
   onCancelar,
 }: ConsultaCardProps) {
 
-  // Auxiliar LOCAL - formata valor para R$ 150,00
+  /**
+  * ===========================================================================
+  * FUNÇÕES AUXILIARES (LOCAIS DO COMPONENTE)
+  * ===========================================================================
+  *
+  * Estas funções existem APENAS para ajudar este componente.
+  * Por isso ficam aqui dentro, não precisam estar em outro arquivo.
+  *
+  * Se fossem usadas em vários componentes, criaríamos:
+  * src/utils/formatadores.ts
+  *
+  * ===========================================================================
+  */
+
+  // Formata um número para moeda brasileira (R$ 150,00)
   function formatarValor(valor: number): string {
     return valor.toLocaleString("pt-BR", {
       style: "currency",
@@ -23,6 +59,7 @@ export default function ConsultaCard({
     });
   }
 
+  // Formata uma string ISO do backend no padrão brasileiro (25/03/2026 às 09:00)
   function formatarData(dataHora: string): string {
     const data = new Date(dataHora);
     const dia = data.toLocaleDateString("pt-BR");
@@ -34,16 +71,16 @@ export default function ConsultaCard({
     <View style={styles.card}>
 
       {/*
-        -----------------------------------------------------------------------
-        BADGE DO STATUS
-        -----------------------------------------------------------------------
-        Renderização condicional de estilos!
+ -----------------------------------------------------------------------
+ BADGE DO STATUS
+ -----------------------------------------------------------------------
+ Renderização condicional de estilos!
 
-        Se status === "confirmada" → aplica styles.statusConfirmada (verde)
-        Se status === "cancelada"  → aplica styles.statusCancelada (vermelho)
-        Se status === "agendada"   → só o estilo padrão (roxo)
-        -----------------------------------------------------------------------
-      */}
+ Se status === "confirmada" → aplica styles.statusConfirmada (verde)
+ Se status === "cancelada" → aplica styles.statusCancelada (vermelho)
+ Se status === "agendada" → só o estilo padrão (roxo)
+ -----------------------------------------------------------------------
+ */}
       <View
         style={[
           styles.statusBadge,
@@ -57,14 +94,14 @@ export default function ConsultaCard({
       </View>
 
       {/*
-        -----------------------------------------------------------------------
-        SEÇÃO: MÉDICO
-        -----------------------------------------------------------------------
-        Exibimos todas as informações do médico.
-        Repare que acessamos: consulta.medico.nome, consulta.medico.crm, etc.
-        Isso funciona porque tipamos tudo com TypeScript!
-        -----------------------------------------------------------------------
-      */}
+ -----------------------------------------------------------------------
+ SEÇÃO: MÉDICO
+ -----------------------------------------------------------------------
+ Exibimos todas as informações do médico.
+ Repare que acessamos: consulta.medico.nome, consulta.medico.crm, etc.
+ Isso funciona porque tipamos tudo com TypeScript!
+ -----------------------------------------------------------------------
+ */}
       <View style={styles.secao}>
         <Text style={styles.label}>👨‍⚕️ Médico</Text>
         <Text style={styles.valor}>{consulta.medico.nome}</Text>
@@ -73,14 +110,14 @@ export default function ConsultaCard({
       </View>
 
       {/*
-        -----------------------------------------------------------------------
-        SEÇÃO: PACIENTE
-        -----------------------------------------------------------------------
-        Repare que telefone é OPCIONAL na interface Paciente!
-        Se não existir, não renderizamos nada.
-        Isso é renderização condicional baseada em dados opcionais.
-        -----------------------------------------------------------------------
-      */}
+ -----------------------------------------------------------------------
+ SEÇÃO: PACIENTE
+ -----------------------------------------------------------------------
+ Repare que telefone é OPCIONAL na interface Paciente!
+ Se não existir, não renderizamos nada.
+ Isso é renderização condicional baseada em dados opcionais.
+ -----------------------------------------------------------------------
+ */}
       <View style={styles.secao}>
         <Text style={styles.label}>👤 Paciente</Text>
         <Text style={styles.valor}>{consulta.paciente.nome}</Text>
@@ -92,20 +129,20 @@ export default function ConsultaCard({
       </View>
 
       {/*
-        -----------------------------------------------------------------------
-        SEÇÃO: DADOS DA CONSULTA
-        -----------------------------------------------------------------------
-        Aqui usamos as funções auxiliares formatarData() e formatarValor()
+ -----------------------------------------------------------------------
+ SEÇÃO: DADOS DA CONSULTA
+ -----------------------------------------------------------------------
+ Aqui usamos as funções auxiliares formatarData() e formatarValor()
 
-        Em vez de:
-        <Text>{consulta.data.toLocaleDateString("pt-BR")}</Text>
+ Em vez de:
+ <Text>{consulta.data.toLocaleDateString("pt-BR")}</Text>
 
-        Fazemos:
-        <Text>{formatarData(consulta.data)}</Text>
+ Fazemos:
+ <Text>{formatarData(consulta.data)}</Text>
 
-        Fica mais legível e fácil de manter!
-        -----------------------------------------------------------------------
-      */}
+ Fica mais legível e fácil de manter!
+ -----------------------------------------------------------------------
+ */}
       <View style={styles.secao}>
         <Text style={styles.label}>📅 Dados da Consulta</Text>
         <Text style={styles.valor}>Data: {formatarData(consulta.dataHora)}</Text>
@@ -118,22 +155,22 @@ export default function ConsultaCard({
       </View>
 
       {/*
-        -----------------------------------------------------------------------
-        BOTÕES DE AÇÃO (PROPS OPCIONAIS + CALLBACKS)
-        -----------------------------------------------------------------------
-        CONCEITO MUITO IMPORTANTE!
+ -----------------------------------------------------------------------
+ BOTÕES DE AÇÃO (PROPS OPCIONAIS + CALLBACKS)
+ -----------------------------------------------------------------------
+ CONCEITO MUITO IMPORTANTE!
 
-        Este componente NÃO gerencia o estado da consulta.
-        Quem gerencia é o componente PAI (App.tsx).
+ Este componente NÃO gerencia o estado da consulta.
+ Quem gerencia é o componente PAI (App.tsx).
 
-        Renderização condicional em DOIS níveis:
-        Nível 1: consulta.status === "agendada"
-        → Só mostra botões se a consulta ainda estiver agendada
+ Renderização condicional em DOIS níveis:
+ Nível 1: consulta.status === "agendada"
+ → Só mostra botões se a consulta ainda estiver agendada
 
-        Nível 2: onConfirmar && <Botao>
-        → Só mostra o botão se a prop foi passada
-        -----------------------------------------------------------------------
-      */}
+ Nível 2: onConfirmar && <Botao>
+ → Só mostra o botão se a prop foi passada
+ -----------------------------------------------------------------------
+ */}
       <View style={styles.acoes}>
         {consulta.status === "agendada" && (
           <>
@@ -175,6 +212,7 @@ export default function ConsultaCard({
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   // Container principal do card

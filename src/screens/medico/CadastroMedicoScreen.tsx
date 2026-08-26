@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
     View,
     Text,
@@ -12,67 +12,46 @@ import {
 } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../navigation/types";
-import { cadastrarMedico } from "../../services/medicoService";
-import { listarEspecialidades } from "../../services/especialidadeService";
-import { Especialidade } from "../../types/especialidade";
+import { cadastrarPaciente } from "../../services/pacienteService";
+import { mensagemErroApi } from "../../utils/apiErro";
 
 type Props = {
-    navigation: NativeStackNavigationProp<RootStackParamList, "CadastroMedico">;
+    navigation: NativeStackNavigationProp<RootStackParamList, "CadastroPaciente">;
 };
 
-export default function CadastroMedicoScreen({ navigation }: Props) {
+export default function CadastroPacienteScreen({ navigation }: Props) {
     const [nome, setNome] = useState("");
-    const [crm, setCrm] = useState("");
-    const [valor, setValor] = useState("");
-    const [especialidades, setEspecialidades] = useState<Especialidade[]>([]);
-    const [especialidadeSelecionada, setEspecialidadeSelecionada] =
-        useState<Especialidade | null>(null);
-    const [mostrarEspecialidades, setMostrarEspecialidades] = useState(false);
+    const [cpf, setCpf] = useState("");
+    const [email, setEmail] = useState("");
+    const [telefone, setTelefone] = useState("");
     const [salvando, setSalvando] = useState(false);
     const [erro, setErro] = useState("");
 
-    useEffect(() => {
-        listarEspecialidades().then(setEspecialidades);
-    }, []);
-
     async function handleCadastrar() {
-        if (!nome.trim() || !crm.trim() || !especialidadeSelecionada) {
-            setErro("Preencha os campos obrigatorios: nome, CRM e especialidade.");
+        if (!nome.trim() || !cpf.trim() || !email.trim()) {
+            setErro("Preencha os campos obrigatorios: nome, CPF e e-mail.");
             return;
         }
-
-        let valorNum: number | null = null;
-        if (valor.trim()) {
-            valorNum = parseFloat(valor.replace(",", "."));
-            if (isNaN(valorNum) || valorNum <= 0) {
-                setErro("Digite um valor valido para a consulta.");
-                return;
-            }
+        const cpfLimpo = cpf.replace(/\D/g, "");
+        if (cpfLimpo.length !== 11) {
+            setErro("Digite um CPF valido com 11 digitos.");
+            return;
         }
-
         try {
             setSalvando(true);
             setErro("");
-            const medico = await cadastrarMedico({
+            const paciente = await cadastrarPaciente({
                 nome: nome.trim(),
-                crm: crm.trim(),
-                especialidade: especialidadeSelecionada,
-                ativo: true,
-                valorConsulta: valorNum,
+                cpf: cpfLimpo,
+                email: email.trim(),
+                telefone: telefone.trim() || undefined,
             });
-            if (medico.valorConsulta == null) {
-                navigation.replace("PerfilMedico", {
-                    medicoId: medico.id,
-                    medicoNome: medico.nome,
-                });
-            } else {
-                navigation.replace("ConsultasMedico", {
-                    medicoId: medico.id,
-                    medicoNome: medico.nome,
-                });
-            }
-        } catch {
-            setErro("Erro ao cadastrar. CRM ja pode estar em uso.");
+            navigation.replace("MinhasConsultas", {
+                pacienteId: paciente.id,
+                pacienteNome: paciente.nome,
+            });
+        } catch (e) {
+            setErro(mensagemErroApi(e, "Erro ao cadastrar. CPF ou e-mail ja podem estar em uso."));
         } finally {
             setSalvando(false);
         }
@@ -87,99 +66,48 @@ export default function CadastroMedicoScreen({ navigation }: Props) {
                 contentContainerStyle={styles.content}
                 keyboardShouldPersistTaps="handled"
             >
-                <Text style={styles.titulo}>Cadastro de Medico</Text>
+                <Text style={styles.titulo}>Criar Conta</Text>
                 <Text style={styles.subtitulo}>
-                    Preencha seus dados para criar sua conta
+                    Preencha seus dados para se cadastrar
                 </Text>
 
                 <View style={styles.formulario}>
-                    {/* Nome */}
-                    <Text style={styles.label}>Nome completo * (inclua Dr. ou Dra.)</Text>
+                    <Text style={styles.label}>Nome completo *</Text>
                     <TextInput
                         style={styles.input}
-                        placeholder="Ex: Dr. Carlos Oliveira"
+                        placeholder="Ex: Joao da Silva"
                         value={nome}
                         onChangeText={setNome}
                     />
 
-                    {/* CRM */}
-                    <Text style={styles.label}>CRM * (somente numeros)</Text>
+                    <Text style={styles.label}>CPF * (somente numeros)</Text>
                     <TextInput
                         style={styles.input}
-                        placeholder="Ex: 123456"
+                        placeholder="Ex: 12345678900"
                         keyboardType="numeric"
-                        value={crm}
-                        onChangeText={(text) => setCrm(text.replace(/\D/g, ""))}
+                        maxLength={11}
+                        value={cpf}
+                        onChangeText={(text) => setCpf(text.replace(/\D/g, ""))}
                     />
 
-                    {/* Especialidade */}
-                    <Text style={styles.label}>Especialidade *</Text>
-                    <TouchableOpacity
-                        style={[
-                            styles.seletor,
-                            mostrarEspecialidades && styles.seletorAberto,
-                        ]}
-                        onPress={() => setMostrarEspecialidades(!mostrarEspecialidades)}
-                        activeOpacity={0.8}
-                    >
-                        <Text
-                            style={[
-                                styles.seletorTexto,
-                                !especialidadeSelecionada && styles.seletorPlaceholder,
-                            ]}
-                        >
-                            {especialidadeSelecionada
-                                ? especialidadeSelecionada.nome
-                                : "Selecione a especialidade"}
-                        </Text>
-                        <Text style={styles.seletorSeta}>
-                            {mostrarEspecialidades ? "▲" : "▼"}
-                        </Text>
-                    </TouchableOpacity>
-
-                    {mostrarEspecialidades && (
-                        <View style={styles.listaEspecialidades}>
-                            {especialidades.map((esp) => (
-                                <TouchableOpacity
-                                    key={String(esp.id)}
-                                    style={[
-                                        styles.itemEspecialidade,
-                                        especialidadeSelecionada?.id === esp.id &&
-                                        styles.itemSelecionado,
-                                    ]}
-                                    onPress={() => {
-                                        setEspecialidadeSelecionada(esp);
-                                        setMostrarEspecialidades(false);
-                                    }}
-                                >
-                                    <Text
-                                        style={[
-                                            styles.itemTexto,
-                                            especialidadeSelecionada?.id === esp.id &&
-                                            styles.itemTextoSelecionado,
-                                        ]}
-                                    >
-                                        {esp.nome}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    )}
-
-                    {/* Valor */}
-                    <Text style={[styles.label, { marginTop: 16 }]}>
-                        Valor da Consulta (opcional)
-                    </Text>
+                    <Text style={styles.label}>E-mail *</Text>
                     <TextInput
                         style={styles.input}
-                        placeholder="Ex: 250.00"
-                        keyboardType="decimal-pad"
-                        value={valor}
-                        onChangeText={setValor}
+                        placeholder="Ex: joao@email.com"
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        value={email}
+                        onChangeText={setEmail}
                     />
-                    <Text style={styles.hint}>
-                        Pode ser preenchido agora ou depois no seu perfil.
-                    </Text>
+
+                    <Text style={styles.label}>Telefone (opcional)</Text>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Ex: 11999999999"
+                        keyboardType="phone-pad"
+                        value={telefone}
+                        onChangeText={setTelefone}
+                    />
 
                     {erro !== "" && <Text style={styles.erroTexto}>{erro}</Text>}
 
@@ -191,7 +119,7 @@ export default function CadastroMedicoScreen({ navigation }: Props) {
                         {salvando ? (
                             <ActivityIndicator color="#fff" />
                         ) : (
-                            <Text style={styles.botaoTexto}>Cadastrar</Text>
+                            <Text style={styles.botaoTexto}>Criar Conta</Text>
                         )}
                     </TouchableOpacity>
                 </View>
@@ -231,45 +159,6 @@ const styles = StyleSheet.create({
         marginBottom: 16,
         color: "#333",
     },
-    hint: { fontSize: 12, color: "#999", marginBottom: 16, marginTop: -12 },
-    seletor: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        borderWidth: 1,
-        borderColor: "#ddd",
-        borderRadius: 8,
-        padding: 12,
-        marginBottom: 0,
-        backgroundColor: "#fff",
-    },
-    seletorAberto: {
-        borderColor: "#79059C",
-        borderBottomLeftRadius: 0,
-        borderBottomRightRadius: 0,
-        borderBottomWidth: 0,
-    },
-    seletorTexto: { fontSize: 15, color: "#333" },
-    seletorPlaceholder: { color: "#aaa" },
-    seletorSeta: { fontSize: 12, color: "#79059C" },
-    listaEspecialidades: {
-        borderWidth: 1,
-        borderColor: "#79059C",
-        borderTopWidth: 0,
-        borderBottomLeftRadius: 8,
-        borderBottomRightRadius: 8,
-        marginBottom: 16,
-        overflow: "hidden",
-    },
-    itemEspecialidade: {
-        padding: 12,
-        borderTopWidth: 1,
-        borderTopColor: "#f0e6f5",
-        backgroundColor: "#fff",
-    },
-    itemSelecionado: { backgroundColor: "#f0e6f5" },
-    itemTexto: { fontSize: 15, color: "#333" },
-    itemTextoSelecionado: { color: "#79059C", fontWeight: "600" },
     erroTexto: {
         color: "#c0392b",
         fontSize: 13,
@@ -286,4 +175,3 @@ const styles = StyleSheet.create({
     botaoDesabilitado: { opacity: 0.6 },
     botaoTexto: { color: "#fff", fontWeight: "bold", fontSize: 16 },
 });
-
